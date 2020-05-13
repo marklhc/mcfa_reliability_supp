@@ -1,0 +1,35 @@
+TITLE:  1-factor model at level 1 and level 2 with cross-level loading 
+        equality constraints (to obtain omega, omega^b, and omega^w);
+DATA:   FILE = timss_usa.dat;
+VARIABLE: 
+        ! Last item has been reversely coded
+        NAMES = IDSCHOOL AS4MAMOR AS4MAENJ AS4MALIK AS4MABOR;
+        USEVAR = AS4MAMOR-AS4MABOR;
+        CLUSTER = IDSCHOOL;
+        MISSING = ALL(-99);
+ANALYSIS:
+        TYPE = TWOLEVEL;
+        ESTIMATOR = BAYES;
+        BITERATIONS = 20000 (5000);  ! minimum 5,000 iterations
+        BCONVERGENCE = .005;
+        PROCESS = 2;
+MODEL:  %WITHIN%
+        f1w BY AS4MAMOR-AS4MABOR* (l1-l4);
+        f1w@1;
+        AS4MAMOR-AS4MABOR* (evw1-evw4);
+        %BETWEEN%
+        f1b BY AS4MAMOR-AS4MABOR* (l1-l4);
+        f1b* (vf1b);
+        AS4MAMOR-AS4MABOR* (evb1-evb4);
+MODEL CONSTRAINT:
+        NEW(omega2l omegaw omegab);
+        omega2l = (l1 + l2 + l3 + l4)^2 * (1 + vf1b) /
+                  ((l1 + l2 + l3 + l4)^2 * (1 + vf1b) + 
+                   evb1 + evb2 + evb3 + evb4 + evw1 + evw2 + evw3 + evw4);
+        omegaw = (l1 + l2 + l3 + l4)^2 * 1 /
+                  ((l1 + l2 + l3 + l4)^2 * 1 + evw1 + evw2 + evw3 + evw4);
+        omegab = (l1 + l2 + l3 + l4)^2 * vf1b /
+                 ((l1 + l2 + l3 + l4)^2 * (1 / 25.1 + vf1b) + 
+                  evb1 + evb2 + evb3 + evb4 + 
+                  (evw1 + evw2 + evw3 + evw4) / 25.1);
+OUTPUT: 

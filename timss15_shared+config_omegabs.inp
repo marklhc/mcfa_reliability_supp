@@ -1,0 +1,36 @@
+TITLE:  Simultaneous shared-and-configural model at level 2 (to obtain 
+        omega^{b(s)});
+DATA:   FILE = timss15_eng.dat;
+VARIABLE: 
+        ! Last item has been reversely coded
+        NAMES = IDCLASS MSBM18A MSBM18B MSBM18C MSBM18H MSBM18I MSBM18M;
+        USEVAR = MSBM18A-MSBM18M;
+        CLUSTER = IDCLASS;
+        MISSING = ALL(-99);
+ANALYSIS:
+        TYPE = TWOLEVEL;
+        ESTIMATOR = BAYES;
+        BITERATIONS = 200000 (10000);  ! minimum 10,000 iterations; it takes
+                                       ! longer time to converge
+        BCONVERGENCE = .005;
+        PROCESS = 2;
+MODEL:  %WITHIN%
+        f1w BY MSBM18A-MSBM18M* (l1-l6);
+        f1w@1;
+        MSBM18A-MSBM18M (evw1-evw6);
+        %BETWEEN%
+        f1b BY MSBM18A-MSBM18M* (l1-l6);
+        f1b@.05263158;  ! fixed ICC to .05
+        f1bs BY MSBM18A
+                MSBM18B-MSBM18M* (ls2-ls6);
+        f1bs*.05 (vf1bs);
+        f1b WITH f1bs@0;
+        MSBM18A-MSBM18M* (evb1-evb6);
+MODEL CONSTRAINT:
+        NEW(omegabs);
+        omegabs = (1 + ls2 + ls3 + ls4 + ls5 + ls6)^2 * vf1bs /
+                  ((1 + ls2 + ls3 + ls4 + ls5 + ls6)^2 * vf1bs + 
+                   (l1 + l2 + l3 + l4 + l5 + l6)^2 * (1 / 9.15 + .05 / (1 - .05)) + 
+                   evb1 + evb2 + evb3 + evb4 + evb5 + evb6 + 
+                   (evw1 + evw2 + evw3 + evw4 + evw5 + evw6) / 9.15);
+OUTPUT: 

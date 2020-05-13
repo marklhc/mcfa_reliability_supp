@@ -1,0 +1,37 @@
+TITLE:  Saturated model at level 1 and 1-factor model at level 2 (to obtain 
+        omega^b);
+DATA:   FILE = timss15_eng.dat;
+VARIABLE: 
+        ! Last item has been reversely coded
+        NAMES = IDCLASS MSBM18A MSBM18B MSBM18C MSBM18H MSBM18I MSBM18M;
+        USEVAR = MSBM18A-MSBM18M;
+        CLUSTER = IDCLASS;
+        MISSING = ALL(-99);
+ANALYSIS:
+        TYPE = TWOLEVEL;
+        ESTIMATOR = BAYES;
+        BITERATIONS = 200000 (10000);  ! minimum 10,000 iterations
+        BCONVERGENCE = .005;
+        PROCESS = 2;
+MODEL:  %WITHIN%
+        MSBM18A WITH MSBM18B-MSBM18M (covw12-covw16);
+        MSBM18B WITH MSBM18C-MSBM18M (covw23-covw26);
+        MSBM18C WITH MSBM18H-MSBM18M (covw34-covw36);
+        MSBM18H WITH MSBM18I-MSBM18M (covw45-covw46);
+        MSBM18I WITH MSBM18M (covw56);
+        MSBM18A-MSBM18M (varw1-varw6);
+        %BETWEEN%
+        f1b BY MSBM18A-MSBM18M* (l1-l6);
+        f1b@1;
+        MSBM18A-MSBM18M* (thb1-thb6);
+MODEL CONSTRAINT:
+        NEW(omegab);
+        omegab = (l1 + l2 + l3 + l4 + l5 + l6)^2 * 1 /
+                 ((l1 + l2 + l3 + l4 + l5 + l6)^2 * 1 + 
+                  thb1 + thb2 + thb3 + thb4 + thb5 + thb6 + 
+                 (varw1 + varw2 + varw3 + varw4 + varw5 + varw6 + 
+                  2 * (covw12 + covw13 + covw14 + covw15 + covw16 + 
+                       covw23 + covw24 + covw25 + covw26 + 
+                       covw34 + covw35 + covw36 + 
+                       covw45 + covw46 + covw56)) / 9.15);
+OUTPUT: 

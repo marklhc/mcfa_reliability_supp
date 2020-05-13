@@ -1,0 +1,29 @@
+TITLE:  Saturated model at level 2 and 1-factor model at level 1 (to obtain 
+        omega^w);
+DATA:   FILE = timss_usa.dat;
+VARIABLE: 
+        ! Last item has been reversely coded
+        NAMES = IDSCHOOL AS4MAMOR AS4MAENJ AS4MALIK AS4MABOR;
+        USEVAR = AS4MAMOR-AS4MABOR;
+        CLUSTER = IDSCHOOL;
+        MISSING = ALL(-99);
+ANALYSIS:
+        TYPE = TWOLEVEL;
+        ESTIMATOR = BAYES;
+        BITERATIONS = 20000 (5000);  ! minimum 5,000 iterations
+        BCONVERGENCE = .005;
+        PROCESS = 2;
+MODEL:  %WITHIN%
+        f1w BY AS4MAMOR-AS4MABOR* (l1-l4);
+        f1w@1;
+        AS4MAMOR-AS4MABOR* (thw1-thw4);
+        %BETWEEN%
+        AS4MAMOR WITH AS4MAENJ-AS4MABOR;
+        AS4MAENJ WITH AS4MALIK-AS4MABOR;
+        AS4MALIK WITH AS4MABOR;
+        AS4MAMOR-AS4MABOR;
+MODEL CONSTRAINT:
+        NEW(omegaw);
+        omegaw = (l1 + l2 + l3 + l4)^2 * 1 /
+                  ((l1 + l2 + l3 + l4)^2 * 1 + thw1 + thw2 + thw3 + thw4);
+OUTPUT: 

@@ -1,0 +1,47 @@
+TITLE:  Saturated model at level 1 and level 2 (to obtain alpha^2l, 
+        alpha^b, and alpha^w);
+DATA:   FILE = timss_usa.dat;
+VARIABLE: 
+        ! Last item has been reversely coded
+        NAMES = IDSCHOOL AS4MAMOR AS4MAENJ AS4MALIK AS4MABOR;
+        USEVAR = AS4MAMOR-AS4MABOR;
+        CLUSTER = IDSCHOOL;
+        MISSING = ALL(-99);
+ANALYSIS:
+        TYPE = TWOLEVEL;
+        ESTIMATOR = BAYES;
+        BITERATIONS = 20000 (5000);  ! minimum 5,000 iterations
+        BCONVERGENCE = .025;
+        PROCESS = 2;
+MODEL:  %WITHIN%
+        AS4MAMOR WITH AS4MAENJ-AS4MABOR (covw12-covw14);
+        AS4MAENJ WITH AS4MALIK-AS4MABOR (covw23-covw24);
+        AS4MALIK WITH AS4MABOR (covw34);
+        AS4MAMOR-AS4MABOR (varw1-varw4);
+        %BETWEEN%
+        AS4MAMOR WITH AS4MAENJ-AS4MABOR (covb12-covb14);
+        AS4MAENJ WITH AS4MALIK-AS4MABOR (covb23-covb24);
+        AS4MALIK WITH AS4MABOR (covb34);
+        AS4MAMOR-AS4MABOR (varb1-varb4);
+MODEL CONSTRAINT:
+        NEW(alphab alphaw alpha2l);
+        ! 4 indicators in total; harmonic mean cluster size = 25.1;
+        alphab = 4 * 2 * (covb12 + covb13 + covb14 + covb23 + covb24 + covb34) / 
+                 (4 - 1) / 
+                 (varb1 + varb2 + varb3 + varb4 + 
+                  2 * (covb12 + covb13 + covb14 + covb23 + covb24 + covb34) + 
+                  (varw1 + varw2 + varw3 + varw4 + 
+                   2 * (covw12 + covw13 + covw14 + covw23 + covw24 + covw34)) / 
+                   25.1);
+        alphaw = 4 * 2 * (covw12 + covw13 + covw14 + covw23 + covw24 + covw34) / 
+                 (4 - 1) / 
+                 (varw1 + varw2 + varw3 + varw4 + 
+                  2 * (covw12 + covw13 + covw14 + covw23 + covw24 + covw34)); 
+        alpha2l = 4 * 2 * (covb12 + covb13 + covb14 + covb23 + covb24 + covb34 + 
+                           covw12 + covw13 + covw14 + 
+                           covw23 + covw24 + covw34) / (4 - 1) / 
+                  (varb1 + varb2 + varb3 + varb4 + 
+                   2 * (covb12 + covb13 + covb14 + covb23 + covb24 + covb34) + 
+                   varw1 + varw2 + varw3 + varw4 + 
+                   2 * (covw12 + covw13 + covw14 + covw23 + covw24 + covw34));
+OUTPUT: 
