@@ -19,8 +19,8 @@ count(timss15_eng %>% drop_na(), IDCLASS) %>%
   transmute(n_inv = 1 / n) %>% 
   summarize(1 / mean(n_inv))
 
-# Obtain omega^w and 95% CI using a saturated between-cluster model --------
-# For a within-cluster construct
+# Obtain omega^b and 95% CI using a saturated within-cluster model --------
+# For a between-cluster construct
 
 library(lavaan)
 mcfas1 <- 
