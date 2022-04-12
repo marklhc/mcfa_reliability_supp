@@ -1,0 +1,228 @@
+---
+title: "Testing implementation in `semTools::compRelSEM()`"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load Packages
+
+```{r load-pkg, message = FALSE}
+library(tidyverse)
+library(lavaan)
+library(semTools)
+```
+
+## Configural Model in [Lai (2021)](https://doi.org/10.1037/met0000287)
+
+### Data Import
+
+```{r timss_usa}
+timss_usa <- haven::read_sav("../../timss/data/asgUSAm4.sav") %>%
+    select(
+        IDCNTRY, IDSCHOOL,
+        AS4MAMOR, AS4MAENJ, AS4MALIK, AS4MABOR
+    ) %>%
+    drop_na() %>%
+    mutate(AS4MABORr = 5 - AS4MABOR)
+```
+
+### Comparison
+
+```{r}
+# Note: need to use the same name for the factors at level-1 and level-2
+mcfa11 <- 
+   'level: 1
+     f1 =~ NA * AS4MAMOR + l1 * AS4MAMOR + l2 * AS4MAENJ + l3 * AS4MALIK + l4 * AS4MABORr
+     AS4MAMOR ~~ ev1w * AS4MAMOR
+     AS4MAENJ ~~ ev2w * AS4MAENJ
+     AS4MALIK ~~ ev3w * AS4MALIK
+     AS4MABORr ~~ ev4w * AS4MABORr
+     f1 ~~ 1 * f1
+   level: 2
+     f1 =~ NA * AS4MAMOR + l1 * AS4MAMOR + l2 * AS4MAENJ + l3 * AS4MALIK + l4 * AS4MABORr
+     # fixed residual variances
+     AS4MAMOR ~~ ev1b * AS4MAMOR
+     AS4MAENJ ~~ 0 * AS4MAENJ
+     AS4MALIK ~~ ev3b * AS4MALIK
+     AS4MABORr ~~ ev4b * AS4MABORr
+     f1 ~~ vf1b * f1
+   # tilde omega values:
+   tilomgb := (l1 + l2 + l3 + l4)^2 * vf1b /
+              ((l1 + l2 + l3 + l4)^2 * vf1b + ev1b + 0 + ev3b + ev4b)
+   tilomgw := (l1 + l2 + l3 + l4)^2 * 1 /
+              ((l1 + l2 + l3 + l4)^2 * 1 + ev1w + ev2w + ev3w + ev4w)
+   # score reliability:
+   omg2l := (l1 + l2 + l3 + l4)^2 * (1 + vf1b) /
+            ((l1 + l2 + l3 + l4)^2 * (1 + vf1b) + 
+             ev1b + 0 + ev3b + ev4b + ev1w + ev2w + ev3w + ev4w)
+   omgb := (l1 + l2 + l3 + l4)^2 * vf1b /
+           ((l1 + l2 + l3 + l4)^2 * vf1b + ev1b + 0 + ev3b + ev4b + 
+            (ev1w + ev2w + ev3w + ev4w + (l1 + l2 + l3 + l4)^2) / 25.1)'
+
+mcfa11_fit <- cfa(mcfa11, data = timss_usa, cluster = "IDSCHOOL")
+summary(mcfa11_fit)
+```
+
+```{r}
+coef(mcfa11_fit, type = "user")[c("tilomgw", "omg2l", "omgb")]
+```
+
+```{r}
+comp_rel <- compRelSEM(mcfa11_fit,
+    obs.var = FALSE,
+    config = c("f1"), shared = "f1"
+)
+comp_rel
+```
+
+Discrepancy in the between reliability likely due to rounding error in the harmonic mean of cluster sizes, in which case `compRelSEM()` should be more accurate.
+
+## Saturated Within-Cluster Model
+
+### Data Import
+
+```{r timss_eng}
+timss15_eng <- haven::read_sav("../../timss/data/MSGUSAM3.sav") %>%
+  select(
+    IDCNTRY, IDSCHOOL, IDCLASS,
+    MSBM18A, MSBM18B, MSBM18C, MSBM18H, MSBM18I, MSBM18M
+  )
+```
+
+### Comparison
+
+```{r}
+mcfas1 <- 
+  'level: 1
+     MSBM18A ~~ c11w * MSBM18A + c12w * MSBM18B + c13w * MSBM18C + 
+                c14w * MSBM18H + c15w * MSBM18I + c16w * MSBM18M
+     MSBM18B ~~ c22w * MSBM18B + c23w * MSBM18C + c24w * MSBM18H + 
+                c25w * MSBM18I + c26w * MSBM18M
+     MSBM18C ~~ c33w * MSBM18C + c34w * MSBM18H + c35w * MSBM18I + 
+                c36w * MSBM18M
+     MSBM18H ~~ c44w * MSBM18H + c45w * MSBM18I + c46w * MSBM18M
+     MSBM18I ~~ c55w * MSBM18I + c56w * MSBM18M
+     MSBM18M ~~ c66w * MSBM18M
+   level: 2
+     f1b =~ NA * MSBM18A + l1 * MSBM18A + l2 * MSBM18B + l3 * MSBM18C + 
+            l4 * MSBM18H + l5 * MSBM18I + l6 * MSBM18M
+     # fixed residual variances
+     MSBM18A ~~ ev1b * MSBM18A
+     MSBM18B ~~ ev2b * MSBM18B
+     MSBM18C ~~ ev3b * MSBM18C
+     MSBM18H ~~ ev4b * MSBM18H
+     MSBM18I ~~ ev5b * MSBM18I
+     MSBM18M ~~ ev6b * MSBM18M
+     f1b ~~ 1 * f1b
+   # score reliability:
+   omgb := (l1 + l2 + l3 + l4 + l5 + l6)^2 /
+              ((l1 + l2 + l3 + l4 + l5 + l6)^2 + 
+               ev1b + ev2b + ev3b + ev4b + ev5b + ev6b + 
+           (c11w + c22w + c33w + c44w + c55w + c66w + 
+            2 * (c12w + c13w + c14w + c15w + c16w + 
+                 c23w + c24w + c25w + c26w + 
+                 c34w + c35w + c36w + c45w + c46w + c56w)) / 9.15)'
+mcfas1_fit <- cfa(mcfas1, data = timss15_eng, cluster = "IDCLASS")
+summary(mcfas1_fit)
+```
+
+```{r}
+coef(mcfas1_fit, type = "user")["omgb"]
+```
+
+```{r}
+compRelSEM(mcfas1_fit,
+    obs.var = FALSE,
+    shared = "f1b"
+)
+```
+
+The documentation of `compRelSEM()` recommends not using a saturated within-cluster model. Using such a model, the computation assumes the within-variance is zero, which overestimates the reliability.
+
+## Simultaneous Shared-and-Configural Model
+
+### Comparison
+
+```{r}
+mcfa11shared <- 
+  'level: 1
+     f1 =~ NA * MSBM18A + l1 * MSBM18A + l2 * MSBM18B + l3 * MSBM18C + 
+            l4 * MSBM18H + l5 * MSBM18I + l6 * MSBM18M
+     MSBM18A ~~ ev1w * MSBM18A
+     MSBM18B ~~ ev2w * MSBM18B
+     MSBM18C ~~ ev3w * MSBM18C
+     MSBM18H ~~ ev4w * MSBM18H
+     MSBM18I ~~ ev5w * MSBM18I
+     MSBM18M ~~ ev6w * MSBM18M
+     f1 ~~ 1 * f1
+   level: 2
+     f1 =~ NA * MSBM18A + l1 * MSBM18A + l2 * MSBM18B + l3 * MSBM18C + 
+            l4 * MSBM18H + l5 * MSBM18I + l6 * MSBM18M
+     f1bs =~ MSBM18A + l2s * MSBM18B + l3s * MSBM18C + 
+             l4s * MSBM18H + l5s * MSBM18I + l6s * MSBM18M
+     # fixed residual variances
+     MSBM18A ~~ ev1b * MSBM18A
+     MSBM18B ~~ ev2b * MSBM18B
+     MSBM18C ~~ ev3b * MSBM18C
+     MSBM18H ~~ ev4b * MSBM18H
+     MSBM18I ~~ ev5b * MSBM18I
+     MSBM18M ~~ ev6b * MSBM18M
+     f1 ~~ (.05 / (1 - .05)) * f1
+     f1bs ~~ v1bs * f1bs
+     f1 ~~ 0 * f1bs
+   # score reliability:
+   omgbs := (1 + l2s + l3s + l4s + l5s + l6s)^2 * v1bs /
+            ((l1 + l2 + l3 + l4 + l5 + l6)^2 * .05 / (1 - .05) + 
+             (1 + l2s + l3s + l4s + l5s + l6s)^2 * v1bs + 
+             ev1b + ev2b + ev3b + ev4b + ev5b + ev6b + 
+             (ev1w + ev2w + ev3w + ev4w + ev5w + ev6w + 
+              (l1 + l2 + l3 + l4 + l5 + l6)^2) / 9.15)'
+mcfa11sh_fit <- cfa(mcfa11shared, data = timss15_eng, cluster = "IDCLASS")
+summary(mcfa11sh_fit)
+```
+
+```{r}
+# Reliability for shared construct
+coef(mcfa11sh_fit, type = "user")["omgbs"]
+```
+
+```{r}
+compRelSEM(mcfa11sh_fit,
+    obs.var = FALSE,
+    config = "f1",
+    shared = c("f1", "f1bs")
+)
+```
+
+The discrepancy is due to level-1 variances not included for the construct reliability of `f1bs`.
+
+```{r}
+par2 <- lavInspect(mcfa11sh_fit, what = "est")$IDCLASS
+lam2 <- par2$lambda
+phi2 <- par2$psi
+theta2 <- par2$theta
+sum_lam2 <- colSums(lam2)
+# Common variance for f1 at between-level
+comvar_f1 <- sum_lam2[1]^2 * phi2[1, 1]
+# Common variance for f1bs at between-level
+comvar_f1bs <- sum_lam2[2]^2 * phi2[2, 2]
+c(comvar_f1, comvar_f1bs) / (sum(comvar_f1, comvar_f1bs, theta2))
+```
+
+Accounting for the level-1 variances:
+
+```{r}
+par1 <- lavInspect(mcfa11sh_fit, what = "est")$within
+lam1 <- par1$lambda
+phi1 <- par1$psi
+theta1 <- par1$theta
+sum_lam1 <- colSums(lam1)
+# Common variance for f1 at within-level
+comvar_f1w <- sum_lam1[1]^2 * phi1[1, 1]
+# Add in the level-1 variances
+c(comvar_f1, comvar_f1bs) /
+  (sum(comvar_f1, comvar_f1bs, theta2) + sum(comvar_f1w, theta1) / 9.15)
+```
