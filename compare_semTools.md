@@ -1,6 +1,17 @@
 Testing implementation in `semTools::compRelSEM()`
 ================
 
+-   [Load Packages](#load-packages)
+-   [Configural Model in Lai (2021)](#configural-model-in-lai-2021)
+    -   [Data Import](#data-import)
+    -   [Comparison](#comparison)
+-   [Saturated Within-Cluster Model](#saturated-within-cluster-model)
+    -   [Data Import](#data-import-1)
+    -   [Comparison](#comparison-1)
+-   [Simultaneous Shared-and-Configural
+    Model](#simultaneous-shared-and-configural-model)
+    -   [Comparison](#comparison-2)
+
 ## Load Packages
 
 ``` r

@@ -1,6 +1,8 @@
 ---
 title: "Testing implementation in `semTools::compRelSEM()`"
-output: github_document
+output:
+  github_document:
+    toc: true
 ---
 
 ```{r setup, include=FALSE}
