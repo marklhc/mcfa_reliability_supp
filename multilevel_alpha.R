@@ -28,7 +28,8 @@ multilevel_alpha <- function(data, id, nsim = 5000, conf_level = .95,
    ynames <- paste0("y", seq_len(nitem))
    colnames(data) <- ynames
    data <- cbind(data, id = id)
-   hmean_cs <- 1 / mean(1 / table(id))
+   tab_id <- table(id)
+   hmean_cs <- 1 / mean(1 / tab_id[tab_id > 0])
    # Alpha
    # Generate syntax for saturated model
    sat_syntax <- (function(y) {
