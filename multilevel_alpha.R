@@ -154,7 +154,7 @@ multilevel_alpha <- function(data, id, nsim = 5000, conf_level = .95,
                                 n.iter = 30 * nitem,
                                 plot = FALSE), pa_args))
    pab <- do.call(fa.parallel, 
-                  args = c(list(x = corw, 
+                  args = c(list(x = corb, 
                                 n.obs = lavTech(msat_fit, "nclusters")[[1]],
                                 n.iter = 30 * nitem,
                                 plot = FALSE), pa_args))
